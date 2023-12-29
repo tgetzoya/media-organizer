@@ -1,4 +1,4 @@
-package net.tgetzoyan.media.organizer.processors;
+package net.tgetzoyan.media.organizer.processors.implementation;
 
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
@@ -11,29 +11,25 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 public class VideoProcessor extends Processor {
     private static final int QUICKTIME_CREATION_DATE = 256;
 
-    public static final List<String> TYPES = Arrays.asList("video/mp4");
-
     private static Logger logger = LoggerFactory.getLogger(VideoProcessor.class);
 
-    public VideoProcessor(Path file, String basePath) {
-        super(logger, file, basePath);
+    public VideoProcessor(String basePath, String hashCommand) {
+        super(logger, basePath, hashCommand);
     }
 
     @Override
-    protected LocalDateTime getDate() {
+    protected LocalDateTime getDate(Path file) {
         Metadata metadata = null;
 
         try {
             metadata = ImageMetadataReader.readMetadata(file.toFile());
         } catch (IOException | ImageProcessingException e) {
-            logger.error("Exception was thrown when extracting metadata for file: {}", file);
+            logger.error("Exception was thrown when extracting metadata for file: {}. Message: {}", file, e.getMessage());
             e.printStackTrace();
         }
 
