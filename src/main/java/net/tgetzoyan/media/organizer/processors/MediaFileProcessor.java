@@ -27,9 +27,6 @@ public class MediaFileProcessor implements ItemProcessor<Path, TransformData> {
     @Value("${file.photo.path}")
     private String photoPath;
 
-    @Value("${file.unknown.path}")
-    private String unknownPath;
-
     @Value("${file.video.path}")
     private String videoPath;
 
@@ -48,7 +45,7 @@ public class MediaFileProcessor implements ItemProcessor<Path, TransformData> {
     private ImageProcessor imageProcessor;
     private VideoProcessor videoProcessor;
 
-    /* destinationPath and photoPath will not be available to the constructor, so they go here instead. */
+    /* These value fields will not be available to the constructor, so they must be set here. */
     @PostConstruct
     private void setProcessors() {
         String command = System.getProperty("os.name").toUpperCase(Locale.ROOT).contains("MAC") ? hashMacOS : hashUnix;
@@ -61,7 +58,7 @@ public class MediaFileProcessor implements ItemProcessor<Path, TransformData> {
     public TransformData process(Path file) throws Exception {
         logger.info("Processing file: {}", file);
         String fileType = null;
-        TransformData data;
+        TransformData data = null;
 
         try {
             fileType = Files.probeContentType(file);
@@ -72,17 +69,16 @@ public class MediaFileProcessor implements ItemProcessor<Path, TransformData> {
 
         if (null != fileType) {
             fileType = fileType.toLowerCase(Locale.ROOT);
-        }
 
-        if (photoTypes.contains(fileType)) {
-            data = this.imageProcessor.process(file);
-        } else if (videoTypes.contains(fileType)) {
-            data = this.videoProcessor.process(file);
+            if (photoTypes.contains(fileType)) {
+                data = this.imageProcessor.process(file);
+            } else if (videoTypes.contains(fileType)) {
+                data = this.videoProcessor.process(file);
+            } else {
+                logger.error("Was not able to properly parse file {} of type {}. File will not be moved.", file, fileType);
+            }
         } else {
-            Path unknownFilePath = Paths.get(destinationPath, unknownPath, file.getFileName().toString());
-            data = new TransformData(file, unknownFilePath);
-
-            logger.warn("Could not parse file type: {}. New file will be: {}", fileType, unknownFilePath);
+            logger.error("Unknown file type for file {}. File will not be moved.", file);
         }
 
         return data;

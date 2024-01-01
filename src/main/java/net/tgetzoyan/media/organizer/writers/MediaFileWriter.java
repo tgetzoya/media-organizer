@@ -21,7 +21,13 @@ public class MediaFileWriter implements ItemWriter<TransformData> {
                     Files.createDirectories(c.getDestinationPath().getParent());
                 }
 
-                Files.copy(c.getSourcePath(), c.getDestinationPath());
+                if (!c.destinationFileExists() && Files.notExists(c.getDestinationPath())) {
+                    Files.copy(c.getSourcePath(), c.getDestinationPath());
+                } else {
+                    logger.error("This file already exists. Removing original.");
+                }
+
+                Files.deleteIfExists(c.getSourcePath());
             } catch (IOException ex) {
                 logger.error("Could not copy file {} to {}. Reason: {}",
                         c.getSourcePath(),

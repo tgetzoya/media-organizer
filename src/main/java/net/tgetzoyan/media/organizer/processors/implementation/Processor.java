@@ -19,6 +19,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 abstract class Processor {
+    private static final String EXTENSION_JPEG = ".jpg";
+
     protected static final DateTimeFormatter FILE_NAME_FORMAT = DateTimeFormatter.ofPattern(
             "EEEE LLLL dd yyyy HHmmss",
             Locale.US
@@ -38,20 +40,18 @@ abstract class Processor {
 
     public TransformData process(Path file) {
         Path newFilePath = formatFilePath(file);
+        TransformData data = new TransformData(file, newFilePath);
 
         try {
             if (fileExists(file, newFilePath)) {
-                logger.info("File already exists. Ignoring.");
-            } else {
-                logger.info("File {} will be moved to {}.", file, newFilePath);
-                return new TransformData(file, newFilePath);
+                data.setDestinationFileExists(true);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
             logger.error("Exception was thrown when comparing hashes for {} and {}.", file, newFilePath);
             e.printStackTrace();
         }
 
-        return null;
+        return data;
     }
 
     protected boolean fileExists(Path file, Path destFilePath) throws IOException, NoSuchAlgorithmException {
@@ -65,8 +65,7 @@ abstract class Processor {
     protected Path formatFilePath(Path file) {
         LocalDateTime fileDate = getDate(file);
 
-        String fileExtension = file.getFileName().toString();
-        fileExtension = fileExtension.substring(fileExtension.lastIndexOf("."));
+        String fileExtension = getExtension(file.getFileName().toString());
 
         if (null == fileDate) {
             UUID uuid;
@@ -89,6 +88,16 @@ abstract class Processor {
                 fileDate.getDayOfMonth() + "",
                 fileName + fileExtension
         );
+    }
+
+    private String getExtension(String fileName) {
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".")).toLowerCase(Locale.ROOT);
+
+        switch (fileExtension) {
+            case ".jpg", ".jpeg" -> fileExtension = EXTENSION_JPEG;
+        }
+
+        return fileExtension;
     }
 
     public byte[] getHash(Path file) throws IOException {
